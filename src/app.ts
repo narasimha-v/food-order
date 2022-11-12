@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
 import express from 'express';
-import { winstonLogger, winstonErrorLogger } from './middleware';
+import { winstonErrorLogger, winstonLogger } from './middleware';
 import { api } from './routes';
+import { connectDB } from './utils';
 
 dotenv.config();
 const PORT = process.env.PORT || 3000;
@@ -15,7 +16,7 @@ app.use(winstonErrorLogger);
 
 const start = async () => {
 	try {
-		// TODO: Database connection
+		await connectDB();
 		app.listen(PORT, () => {
 			console.log(`Server running on http://localhost:${PORT}`);
 		});

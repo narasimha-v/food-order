@@ -4,24 +4,21 @@ import winston from 'winston';
 const winstonLogger = expressWinston.logger({
 	transports: [new winston.transports.Console()],
 	format: winston.format.combine(
-		winston.format.colorize({
-			all: true,
-			colors: { error: 'red', warn: 'yellow', info: 'cyan', debug: 'green' }
-		}),
 		winston.format.json(),
-		winston.format.prettyPrint()
+		winston.format.colorize({ all: true }),
+		winston.format.prettyPrint({ colorize: true })
 	),
+	msg: '{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}',
 	meta: true,
-	msg: 'HTTP {{req.method}} {{req.url}}',
-	expressFormat: true,
-	colorize: true
+	expressFormat: true
 });
 
 const winstonErrorLogger = expressWinston.errorLogger({
 	transports: [new winston.transports.Console()],
 	format: winston.format.combine(
-		winston.format.colorize(),
-		winston.format.json()
+		winston.format.json(),
+		winston.format.colorize({ all: true }),
+		winston.format.prettyPrint({ colorize: true })
 	)
 });
 
