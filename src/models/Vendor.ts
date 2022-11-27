@@ -1,7 +1,7 @@
-import { Document, model, Schema, SchemaTypes } from 'mongoose';
+import { Document, model, Schema } from 'mongoose';
 import { CreateVendorInput, FoodType } from '../dto';
 
-interface VendorDoc extends CreateVendorInput, Document {
+export interface VendorDoc extends CreateVendorInput, Document {
 	salt: string;
 	serviceAvailable: boolean;
 	coverImages: [String];
@@ -23,8 +23,7 @@ const VendorSchema = new Schema<VendorDoc>(
 			maxlength: 200
 		},
 		foodType: {
-			type: String,
-			required: true,
+			type: [String],
 			enum: Object.values(FoodType)
 		},
 		address: {

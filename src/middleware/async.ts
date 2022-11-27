@@ -1,9 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-
-export interface IRequest extends Request {}
+import { NextFunction, Request, Response } from 'express';
 
 export const asyncWrapper = (
-	fn: (req: IRequest, res: Response, next: NextFunction) => Promise<any> | any
+	fn: (req: Request, res: Response, next: NextFunction) => Promise<any> | any
 ) => {
 	return async (req: Request, res: Response, next: NextFunction) => {
 		try {
