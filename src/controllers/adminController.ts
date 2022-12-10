@@ -6,9 +6,6 @@ import { generatePassword, generateSalt } from '../utils';
 
 export const createVendor = asyncWrapper(
 	async (req: Request<any, any, CreateVendorInput>, res, next) => {
-		// Enable below code for testing purposes only
-		await Vendor.deleteMany();
-
 		const allowedFoodTypes = Object.values(FoodType);
 
 		const { email, phone, password, foodType } = req.body;
@@ -73,7 +70,11 @@ export const getVendorById = asyncWrapper(async (req, res, next) => {
 });
 
 export const findVendor = async ({ id, email, phone }: FindVendorOptions) => {
+	if (id) {
+		return await Vendor.findById(id);
+	}
+
 	return await Vendor.findOne({
-		$or: [{ id }, { email }, { phone }]
+		$or: [{ _id: id }, { email }, { phone }]
 	});
 };

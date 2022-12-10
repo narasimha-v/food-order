@@ -1,11 +1,11 @@
 import { NextFunction, Request } from 'express';
-import { EditVendorInput, VendorLoginInput } from '../dto';
+import { CreateFoodInput, EditVendorInput, VendorLoginInput } from '../dto';
 import {
 	asyncWrapper,
 	createCustomError,
 	generateSignature
 } from '../middleware';
-import { VendorDoc } from '../models';
+import { Food, VendorDoc } from '../models';
 import { validatePassword } from '../utils';
 import { findVendor } from './adminController';
 
@@ -66,6 +66,28 @@ export const updateVendorService = asyncWrapper(async (req, res, next) => {
 	await vendor.save();
 
 	return res.status(200).json(vendor);
+});
+
+export const addFood = asyncWrapper(
+	async (req: Request<any, any, CreateFoodInput>, res, next) => {
+		const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
+
+		const createFood = await Food.create({
+			...req.body,
+			vendorId: vendor._id
+		});
+
+		vendor.foods.push(createFood);
+		await vendor.save();
+
+		return res.status(201).json(vendor);
+	}
+);
+
+export const getFoods = asyncWrapper(async (req, res, next) => {
+	const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
+	const foods = await Food.find({ vendorId: vendor._id });
+	return res.status(200).json(foods);
 });
 
 const validateAndReturnVendor = async (req: Request, next: NextFunction) => {

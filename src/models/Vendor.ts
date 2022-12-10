@@ -1,11 +1,13 @@
-import { Document, model, Schema } from 'mongoose';
+import { Document, model, Schema, SchemaTypes } from 'mongoose';
 import { CreateVendorInput, FoodType } from '../dto';
+import { FoodDoc } from './Food';
 
 export interface VendorDoc extends CreateVendorInput, Document {
 	salt: string;
 	serviceAvailable: boolean;
 	coverImages: [String];
 	rating: number;
+	foods: FoodDoc[];
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -58,7 +60,13 @@ const VendorSchema = new Schema<VendorDoc>(
 		rating: {
 			type: Number,
 			default: 0
-		}
+		},
+		foods: [
+			{
+				type: SchemaTypes.ObjectId,
+				ref: 'Food'
+			}
+		]
 	},
 	{
 		toJSON: {

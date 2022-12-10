@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import {
+	addFood,
+	getFoods,
 	getVendorProfile,
 	updateVendorProfile,
 	updateVendorService,
@@ -16,5 +18,9 @@ router.use(verifySignature);
 router.route('/profile').get(getVendorProfile).patch(updateVendorProfile);
 
 router.route('/service').patch(updateVendorService);
+
+router.route('/food').post(addFood);
+
+router.route('/foods').get(getFoods);
 
 export { router as vendorRoute };
