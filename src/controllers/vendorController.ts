@@ -72,8 +72,12 @@ export const addFood = asyncWrapper(
 	async (req: Request<any, any, CreateFoodInput>, res, next) => {
 		const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
 
+		const files = (req.files || []) as Express.Multer.File[];
+		const images = files.map((file) => file.filename);
+
 		const createFood = await Food.create({
 			...req.body,
+			images: images,
 			vendorId: vendor._id
 		});
 
@@ -110,8 +114,12 @@ const partialUpdateVendor = (
 ) => {
 	const { name, foodType, address, phone } = req.body;
 
+	const files = (req.files || []) as Express.Multer.File[];
+	const images = files.map((file) => file.filename);
+
 	if (name) vendor.name = name;
 	if (phone) vendor.phone = phone;
 	if (address) vendor.address = address;
 	if (foodType) vendor.foodType = foodType;
+	if (images.length) vendor.coverImages = images;
 };

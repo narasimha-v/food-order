@@ -71,7 +71,7 @@ export const getVendorById = asyncWrapper(async (req, res, next) => {
 
 export const findVendor = async ({ id, email, phone }: FindVendorOptions) => {
 	if (id) {
-		return await Vendor.findById(id);
+		return await Vendor.findById(id).populate('foods');
 	}
 
 	return await Vendor.findOne({

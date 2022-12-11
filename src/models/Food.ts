@@ -4,7 +4,7 @@ import { CreateFoodInput, FoodCategory, FoodType } from '../dto';
 export interface FoodDoc extends CreateFoodInput, Document {
 	vendorId: string;
 	rating: number;
-	images: [String];
+	images: String[];
 	createdAt: Date;
 	updatedAt: Date;
 }

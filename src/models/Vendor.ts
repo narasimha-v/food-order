@@ -5,7 +5,7 @@ import { FoodDoc } from './Food';
 export interface VendorDoc extends CreateVendorInput, Document {
 	salt: string;
 	serviceAvailable: boolean;
-	coverImages: [String];
+	coverImages: String[];
 	rating: number;
 	foods: FoodDoc[];
 	createdAt: Date;
