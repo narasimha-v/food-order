@@ -41,6 +41,10 @@ const VendorSchema = new Schema<VendorDoc>(
 			type: String,
 			required: true
 		},
+		phone: {
+			type: String,
+			required: true
+		},
 		password: {
 			type: String,
 			required: true

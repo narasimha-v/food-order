@@ -75,6 +75,6 @@ export const findVendor = async ({ id, email, phone }: FindVendorOptions) => {
 	}
 
 	return await Vendor.findOne({
-		$or: [{ _id: id }, { email }, { phone }]
+		$or: [{ email }, { phone }]
 	});
 };

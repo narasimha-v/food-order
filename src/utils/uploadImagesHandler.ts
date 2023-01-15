@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 
 const imageStorage = multer.diskStorage({
 	destination: 'src/images',
-	filename(req, file, callback) {
+	filename(_, file, callback) {
 		callback(null, `${uuid()}-${file.originalname}`);
 	}
 });

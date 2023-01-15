@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import { sign, verify } from 'jsonwebtoken';
-import { AuthPayload, VendorPayload } from '../dto';
+import { AuthPayload } from '../dto';
 import { createCustomError } from './customError';
 
-export const generateSignature = (payload: VendorPayload) => {
+export const generateSignature = (payload: AuthPayload) => {
 	const signature = sign(payload, process.env.APP_SECRET!, {
 		expiresIn: '1d'
 	});

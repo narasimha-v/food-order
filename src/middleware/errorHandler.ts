@@ -8,7 +8,9 @@ export const errorHandler = (
 	__: NextFunction
 ) => {
 	if (err instanceof CustomAPIError) {
-		return res.status(err.statusCode).json({ msg: err.message });
+		return res
+			.status(err.statusCode)
+			.json(err.json ? err.json : { msg: err.message });
 	}
 	return res
 		.status(500)

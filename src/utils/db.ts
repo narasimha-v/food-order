@@ -5,6 +5,7 @@ export const connectDB = async () => {
 		const MONGO_URI = process.env.MONGO_URI;
 		if (!MONGO_URI) throw new Error('MONGO_URI not found.');
 		console.log('Connecting to MongoDB...');
+		mongoose.set('strictQuery', false);
 		const conn = await mongoose.connect(MONGO_URI, {
 			retryWrites: true,
 			w: 'majority'
