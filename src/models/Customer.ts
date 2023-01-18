@@ -5,12 +5,12 @@ export interface CustomerDoc
 	extends CreateCustomerInput,
 		EditCustomerProfileInput,
 		Document {
-	otp: number;
+	otp?: number;
 	lat: number;
 	lng: number;
 	salt: string;
 	verified: boolean;
-	otpExpiry: Date;
+	otpExpiry?: Date;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -44,12 +44,10 @@ const CustomerSchema = new Schema<CustomerDoc>(
 			default: false
 		},
 		otp: {
-			type: Number,
-			required: true
+			type: Number
 		},
 		otpExpiry: {
-			type: Date,
-			required: true
+			type: Date
 		},
 		salt: {
 			type: String,

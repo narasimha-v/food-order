@@ -7,6 +7,7 @@ import {
 	requestOtp,
 	verifyCustomer
 } from '../controllers';
+import { verifySignature } from '../middleware';
 
 const router = Router();
 
@@ -16,7 +17,7 @@ router.route('/signup').post(customerSignup);
 /** ------------------- Login customer ------------------- **/
 router.route('/login').post(customerLogin);
 
-// router.use(verifySignature);
+router.use(verifySignature);
 
 /** ------------------- Verify customer account ------------------- **/
 router.route('/verify').patch(verifyCustomer);
