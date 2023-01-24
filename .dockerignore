@@ -1,0 +1,9 @@
+.git
+.gitignore
+node_modules
+yarn-error.log
+Dockerfile*
+docker-compose*
+README.md
+LICENSE
+.vscode
