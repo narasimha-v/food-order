@@ -38,7 +38,3 @@ TWILIO_PHONE_NUMBER=TWILIO_PHONE_NUMBER
 ## Show your support
 
 Give a ⭐️ if this project helped you!
-
-```
-
-```
