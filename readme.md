@@ -31,8 +31,6 @@ TWILIO_AUTH_TOKEN=TWILIO_AUTH_TOKEN
 TWILIO_PHONE_NUMBER=TWILIO_PHONE_NUMBER
 ```
 
-```
-
 ## Author
 
 👤 **Narasimha**
@@ -40,4 +38,7 @@ TWILIO_PHONE_NUMBER=TWILIO_PHONE_NUMBER
 ## Show your support
 
 Give a ⭐️ if this project helped you!
+
+```
+
 ```
