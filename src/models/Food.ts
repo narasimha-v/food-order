@@ -12,7 +12,8 @@ export interface FoodDoc extends CreateFoodInput, Document {
 const FoodSchema = new Schema<FoodDoc>(
 	{
 		vendorId: {
-			type: String
+			type: String,
+			required: true
 		},
 		name: {
 			type: String,

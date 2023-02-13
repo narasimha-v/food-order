@@ -1,5 +1,6 @@
 import { Document, model, Schema } from 'mongoose';
 import { CreateCustomerInput, EditCustomerProfileInput } from '../dto';
+import { CartItem, OrderDoc } from './Order';
 
 export interface CustomerDoc
 	extends CreateCustomerInput,
@@ -13,6 +14,8 @@ export interface CustomerDoc
 	otpExpiry?: Date;
 	createdAt: Date;
 	updatedAt: Date;
+	orders: Array<OrderDoc>;
+	cart: Array<CartItem>;
 }
 
 const CustomerSchema = new Schema<CustomerDoc>(
@@ -60,7 +63,30 @@ const CustomerSchema = new Schema<CustomerDoc>(
 		lng: {
 			type: Number,
 			default: 0
-		}
+		},
+		orders: [
+			{
+				type: Schema.Types.ObjectId,
+				ref: 'Order'
+			}
+		],
+		cart: [
+			{
+				food: {
+					type: Schema.Types.ObjectId,
+					ref: 'Food',
+					required: true
+				},
+				quantity: {
+					type: Number,
+					required: true
+				},
+				amount: {
+					type: Number,
+					required: true
+				}
+			}
+		]
 	},
 	{
 		toJSON: {

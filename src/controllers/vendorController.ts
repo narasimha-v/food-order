@@ -1,11 +1,16 @@
 import { NextFunction, Request } from 'express';
-import { CreateFoodInput, EditVendorInput, VendorLoginInput } from '../dto';
+import {
+	CreateFoodInput,
+	EditVendorInput,
+	ProcessOrder,
+	VendorLoginInput
+} from '../dto';
 import {
 	asyncWrapper,
 	createCustomError,
 	generateSignature
 } from '../middleware';
-import { Food, VendorDoc } from '../models';
+import { Food, Order, OrderStatus, VendorDoc } from '../models';
 import { validatePassword } from '../utils';
 import { findVendor } from './adminController';
 
@@ -93,6 +98,64 @@ export const getFoods = asyncWrapper(async (req, res, next) => {
 	const foods = await Food.find({ vendorId: vendor._id });
 	return res.status(200).json(foods);
 });
+
+export const getCurrentOrders = asyncWrapper(async (req, res, next) => {
+	const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
+
+	const orders = await Order.find({
+		vendorId: vendor._id,
+		status: { $ne: OrderStatus.DELIVERED }
+	}).populate('items.food');
+
+	if (!orders.length) {
+		return res.status(200).json({ message: 'No new orders' });
+	}
+
+	return res.status(200).json(orders);
+});
+
+export const getOrderDetails = asyncWrapper(async (req, res, next) => {
+	const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
+
+	const orderId = req.params.id;
+
+	const order = await Order.findOne({
+		vendorId: vendor._id,
+		_id: orderId
+	}).populate('items.food');
+
+	if (!order) {
+		return next(createCustomError('Order not found', 404));
+	}
+
+	return res.status(200).json(order);
+});
+
+export const processOrder = asyncWrapper(
+	async (req: Request<any, any, ProcessOrder>, res, next) => {
+		const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
+
+		const orderId = req.params.id;
+		const { orderStatus, remarks, time } = req.body;
+
+		const order = await Order.findOne({
+			vendorId: vendor._id,
+			_id: orderId
+		}).populate('items.food');
+
+		if (!order) {
+			return next(createCustomError('Order not found', 404));
+		}
+
+		order.orderStatus = orderStatus;
+		order.remarks = remarks;
+		if (time) order.readyTime = time;
+
+		await order.save();
+
+		return res.status(200).json(order);
+	}
+);
 
 const validateAndReturnVendor = async (req: Request, next: NextFunction) => {
 	const user = req.user;

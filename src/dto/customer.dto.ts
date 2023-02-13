@@ -1,4 +1,5 @@
-import { IsEmail, Length, IsNotEmpty } from 'class-validator';
+import { IsEmail, Length } from 'class-validator';
+import { OrderStatus } from '../models';
 
 export class CreateCustomerInput {
 	@IsEmail()
@@ -40,4 +41,15 @@ export interface CustomerPayload {
 	_id: string;
 	email: string;
 	verified: boolean;
+}
+
+export interface OrderInput {
+	_id: string;
+	quantity: number;
+}
+
+export interface ProcessOrder {
+	orderStatus: OrderStatus;
+	remarks: string;
+	time?: number;
 }

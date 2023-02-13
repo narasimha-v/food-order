@@ -5,14 +5,22 @@ import {
 	CreateCustomerInput,
 	CustomerLoginInput,
 	EditCustomerProfileInput,
-	FindCustomerOptions
+	FindCustomerOptions,
+	OrderInput
 } from '../dto';
 import {
 	asyncWrapper,
 	createCustomError,
 	generateSignature
 } from '../middleware';
-import { Customer, CustomerDoc } from '../models';
+import {
+	CartItem,
+	Customer,
+	CustomerDoc,
+	Food,
+	Order,
+	PaymentMethod
+} from '../models';
 import {
 	generateSalt,
 	generatePassword,
@@ -20,6 +28,9 @@ import {
 	onRequestOtp,
 	validatePassword
 } from '../utils';
+import { v4 as uuidv4 } from 'uuid';
+
+/* ------------------------ Account service functions ------------------------  */
 
 export const customerSignup = asyncWrapper(
 	async (req: Request<any, any, CreateCustomerInput>, res, next) => {
@@ -199,6 +210,153 @@ export const editCustomerProfile = asyncWrapper(
 	}
 );
 
+/* ------------------------ Order service functions ------------------------  */
+
+export const createOrder = asyncWrapper(
+	async (req: Request<any, any, OrderInput[]>, res, next) => {
+		const customer = (await validateAndReturnCustomer(
+			req,
+			next
+		)) as CustomerDoc;
+
+		const cart = req.body;
+
+		let cartItems: CartItem[] = Array();
+		let netAmount = 0.0;
+
+		const foods = await Food.find({
+			_id: { $in: cart.map((item) => item._id) }
+		});
+
+		for (const item of cart) {
+			const food = foods.find((food) => food._id == item._id);
+
+			if (!food) {
+				return next(createCustomError('Food not found', 404));
+			}
+
+			const price = food.price;
+			const quantity = item.quantity;
+			const amount = quantity * price;
+
+			cartItems.push({ food, quantity, amount });
+
+			netAmount += amount;
+		}
+
+		if (!cartItems.length) {
+			return next(createCustomError('Cart is empty', 400));
+		}
+
+		const order = await Order.create({
+			orderId: uuidv4(),
+			vendorId: foods[0].vendorId,
+			items: cartItems,
+			totalAmount: netAmount,
+			paidThrough: PaymentMethod.COD,
+			orderDate: new Date()
+		});
+
+		if (!order) {
+			return next(createCustomError('Order creation failed', 500));
+		}
+
+		customer.cart = [];
+		customer.orders.push(order);
+		await customer.save();
+		return res.status(201).json(order);
+	}
+);
+
+export const getOrders = asyncWrapper(async (req, res, next) => {
+	const customer = (await validateAndReturnCustomer(req, next)) as CustomerDoc;
+
+	return res.status(200).json(customer.orders);
+});
+
+export const getOrderById = asyncWrapper(async (req, res, next) => {
+	const order = await Order.findById(req.params.id).populate('items.food');
+
+	if (!order) {
+		return next(createCustomError('Order not found', 404));
+	}
+
+	return res.status(200).json(order);
+});
+
+/* ------------------------ Cart service functions ------------------------  */
+
+export const addToCart = asyncWrapper(
+	async (req: Request<any, any, OrderInput>, res, next) => {
+		const customer = (await validateAndReturnCustomer(
+			req,
+			next
+		)) as CustomerDoc;
+
+		const cart = req.body;
+		let cartItems = Array<CartItem>();
+
+		const food = await Food.findById(cart._id);
+
+		if (!food) {
+			return next(createCustomError('Food not found', 404));
+		}
+
+		cartItems = customer.cart;
+
+		if (cartItems.length) {
+			const index = cartItems.findIndex(
+				(item) => item.food._id.toString() == food._id
+			);
+
+			if (index > -1) {
+				if (cart.quantity > 0) {
+					cartItems[index].quantity += cart.quantity;
+					cartItems[index].amount = food.price * cartItems[index].quantity;
+				} else {
+					cartItems.splice(index, 1);
+				}
+			} else {
+				cartItems.push({
+					food,
+					quantity: cart.quantity,
+					amount: food.price * cart.quantity
+				});
+			}
+		} else {
+			cartItems.push({
+				food,
+				quantity: cart.quantity,
+				amount: food.price * cart.quantity
+			});
+		}
+
+		customer.cart = cartItems;
+		await customer.save();
+
+		return res.status(201).json(customer.cart);
+	}
+);
+
+export const clearCart = asyncWrapper(async (req, res, next) => {
+	const customer = (await validateAndReturnCustomer(req, next)) as CustomerDoc;
+
+	customer.cart = [];
+	await customer.save();
+
+	return res.status(200).json({ message: 'Cart cleared' });
+});
+
+export const getCart = asyncWrapper(async (req, res, next) => {
+	const customer = (await validateAndReturnCustomer(req, next)) as CustomerDoc;
+
+	if (!customer.cart.length) {
+		return res.status(200).json({ message: 'Cart is empty' });
+	}
+
+	return res.status(200).json(customer.cart);
+});
+
 const validateAndReturnCustomer = async (req: Request, next: NextFunction) => {
 	const user = req.user;
 	if (!user) {
@@ -219,7 +377,7 @@ export const findCustomer = async ({
 	phone
 }: FindCustomerOptions) => {
 	if (id) {
-		return await Customer.findById(id);
+		return await Customer.findById(id).populate(['orders', 'cart.food']);
 	}
 
 	return await Customer.findOne({
