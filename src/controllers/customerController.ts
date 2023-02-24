@@ -357,6 +357,8 @@ export const getCart = asyncWrapper(async (req, res, next) => {
 	return res.status(200).json(customer.cart);
 });
 
+/* ------------------------ Helpers ------------------------  */
+
 const validateAndReturnCustomer = async (req: Request, next: NextFunction) => {
 	const user = req.user;
 	if (!user) {

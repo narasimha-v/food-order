@@ -1,6 +1,20 @@
+import { VendorDoc } from '../models';
+
 export enum FoodType {
 	VEG = 'veg',
 	NON_VEG = 'non-veg'
+}
+
+export enum OfferType {
+	VENDOR = 'VENDOR',
+	GENERIC = 'GENERIC'
+}
+
+export enum PromoType {
+	USER = 'USER',
+	BANK = 'BANK',
+	CARD = 'CARD',
+	ALL = 'ALL'
 }
 
 export interface CreateVendorInput {
@@ -37,4 +51,23 @@ export interface FindVendorOptions {
 	id?: string;
 	phone?: string;
 	email?: string;
+}
+
+export interface CreateOfferInput {
+	offerType: OfferType;
+	vendors: VendorDoc[];
+	title: string;
+	description: string;
+	minValue: number;
+	offerAmount: number;
+	startValidity: Date;
+	endValidity: Date;
+	promoCode: string;
+	promoType: PromoType;
+	bank: string[];
+	bins: number[];
+	pincode: string;
+	isActive: boolean;
+	createdAt: Date;
+	updatedAt: Date;
 }

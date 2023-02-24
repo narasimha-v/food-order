@@ -1,7 +1,9 @@
 import { NextFunction, Request } from 'express';
 import {
 	CreateFoodInput,
+	CreateOfferInput,
 	EditVendorInput,
+	OfferType,
 	ProcessOrder,
 	VendorLoginInput
 } from '../dto';
@@ -10,7 +12,14 @@ import {
 	createCustomError,
 	generateSignature
 } from '../middleware';
-import { Food, Order, OrderStatus, VendorDoc } from '../models';
+import {
+	Food,
+	Offer,
+	OfferDoc,
+	Order,
+	OrderStatus,
+	VendorDoc
+} from '../models';
 import { validatePassword } from '../utils';
 import { findVendor } from './adminController';
 
@@ -99,6 +108,8 @@ export const getFoods = asyncWrapper(async (req, res, next) => {
 	return res.status(200).json(foods);
 });
 
+/* ------------------------ Orders ------------------------  */
+
 export const getCurrentOrders = asyncWrapper(async (req, res, next) => {
 	const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
 
@@ -157,6 +168,53 @@ export const processOrder = asyncWrapper(
 	}
 );
 
+/* ------------------------ Offers ------------------------  */
+
+export const getOffers = asyncWrapper(async (req, res, next) => {
+	const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
+
+	const offers = await Offer.find({
+		$or: [{ vendors: vendor._id }, { offerType: OfferType.GENERIC }]
+	});
+
+	return res.status(200).json(offers);
+});
+
+export const addOffer = asyncWrapper(
+	async (req: Request<any, any, CreateOfferInput>, res, next) => {
+		const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
+
+		const createOffer = await Offer.create({
+			...req.body,
+			vendors: [vendor]
+		});
+
+		return res.status(201).json(createOffer);
+	}
+);
+
+export const editOffer = asyncWrapper(
+	async (req: Request<any, any, Partial<CreateOfferInput>>, res, next) => {
+		const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
+
+		const offerId = req.params.id;
+
+		const offer = await Offer.findOne({ vendors: vendor._id, _id: offerId });
+
+		if (!offer) {
+			return next(createCustomError('Offer not found', 404));
+		}
+
+		partialUpdateOffer(offer, req);
+
+		await offer.save();
+
+		return res.status(200).json(offer);
+	}
+);
+
+/* ------------------------ Helpers ------------------------  */
+
 const validateAndReturnVendor = async (req: Request, next: NextFunction) => {
 	const user = req.user;
 	if (!user) {
@@ -185,4 +243,23 @@ const partialUpdateVendor = (
 	if (address) vendor.address = address;
 	if (foodType) vendor.foodType = foodType;
 	if (images.length) vendor.coverImages = images;
+};
+
+const partialUpdateOffer = (
+	offer: OfferDoc,
+	req: Request<any, any, Partial<CreateOfferInput>>
+) => {
+	if (req.body.bank) offer.bank = req.body.bank;
+	if (req.body.bins) offer.bins = req.body.bins;
+	if (req.body.title) offer.title = req.body.title;
+	if (req.body.pincode) offer.pincode = req.body.pincode;
+	if (req.body.vendors) offer.vendors = req.body.vendors;
+	if (req.body.minValue) offer.minValue = req.body.minValue;
+	if (req.body.offerType) offer.offerType = req.body.offerType;
+	if (req.body.promoCode) offer.promoCode = req.body.promoCode;
+	if (req.body.promoType) offer.promoType = req.body.promoType;
+	if (req.body.description) offer.description = req.body.description;
+	if (req.body.offerAmount) offer.offerAmount = req.body.offerAmount;
+	if (req.body.endValidity) offer.endValidity = req.body.endValidity;
+	if (req.body.isActive !== undefined) offer.isActive = req.body.isActive;
 };

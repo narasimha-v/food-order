@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import {
 	addFood,
+	addOffer,
+	editOffer,
 	getCurrentOrders,
 	getFoods,
+	getOffers,
 	getOrderDetails,
 	getVendorProfile,
 	processOrder,
@@ -30,10 +33,15 @@ router.route('/food').post(uploadImagesHandler, addFood);
 
 router.route('/foods').get(getFoods);
 
-/* ------------------------ Order  routes ------------------------  */
+/* ------------------------ Orders ------------------------  */
 
 router.route('/orders').get(getCurrentOrders);
 router.route('/orders/:id').get(getOrderDetails);
 router.route('/orders/:id/process').patch(processOrder);
+
+/* ------------------------ Offers ------------------------  */
+router.route('/offers').get(getOffers);
+router.route('/offer').post(addOffer);
+router.route('/offer/:id').patch(editOffer);
 
 export { router as vendorRoute };
