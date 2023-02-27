@@ -8,6 +8,8 @@ export interface VendorDoc extends CreateVendorInput, Document {
 	coverImages: String[];
 	rating: number;
 	foods: FoodDoc[];
+	lat: number;
+	lng: number;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -70,7 +72,15 @@ const VendorSchema = new Schema<VendorDoc>(
 				type: SchemaTypes.ObjectId,
 				ref: 'Food'
 			}
-		]
+		],
+		lat: {
+			type: Number,
+			default: 0
+		},
+		lng: {
+			type: Number,
+			default: 0
+		}
 	},
 	{
 		toJSON: {

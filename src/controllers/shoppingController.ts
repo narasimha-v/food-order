@@ -1,5 +1,5 @@
 import { asyncWrapper, createCustomError } from '../middleware';
-import { FoodDoc, Vendor } from '../models';
+import { FoodDoc, Offer, Vendor } from '../models';
 
 export const getFoodAvailability = asyncWrapper(async (req, res, next) => {
 	const pincode = req.params.pincode;
@@ -83,4 +83,13 @@ export const getRestaurantById = asyncWrapper(async (req, res, next) => {
 		return next(createCustomError('Restaurant not found', 404));
 	}
 	return res.status(200).json(restaurant);
+});
+
+export const getAvailableOffers = asyncWrapper(async (req, res, next) => {
+	const pincode = req.params.pincode;
+	const offers = await Offer.find({ pincode, isActive: true });
+	if (!offers.length) {
+		return next(createCustomError('No offers available', 404));
+	}
+	return res.status(200).json(offers);
 });

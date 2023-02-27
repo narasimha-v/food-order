@@ -11,7 +11,9 @@ import {
 	getOrders,
 	clearCart,
 	requestOtp,
-	verifyCustomer
+	verifyCustomer,
+	verifyOffer,
+	createPayment
 } from '../controllers';
 import { verifySignature } from '../middleware';
 
@@ -39,6 +41,14 @@ router.route('/profile').get(getCustomerProfile).patch(editCustomerProfile);
 /** ------------------- CART ------------------- **/
 
 router.route('/cart').get(getCart).post(addToCart).delete(clearCart);
+
+/** ------------------- APPLY OFFERS ------------------- **/
+
+router.route('/offer/verify/:id').get(verifyOffer);
+
+/** ------------------- PAYMENT ------------------- **/
+
+router.route('/create-payment').post(createPayment);
 
 /** ------------------- ORDERS ------------------- **/
 

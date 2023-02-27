@@ -1,7 +1,7 @@
 import { Request } from 'express';
 import { CreateVendorInput, FindVendorOptions, FoodType } from '../dto';
 import { asyncWrapper, createCustomError } from '../middleware';
-import { Vendor } from '../models';
+import { DeliveryUser, Transaction, Vendor } from '../models';
 import { generatePassword, generateSalt } from '../utils';
 
 export const createVendor = asyncWrapper(
@@ -78,3 +78,62 @@ export const findVendor = async ({ id, email, phone }: FindVendorOptions) => {
 		$or: [{ email }, { phone }]
 	});
 };
+
+export const getTransactions = asyncWrapper(async (req, res, next) => {
+	const transactions = await Transaction.find();
+
+	if (!transactions.length) {
+		return res.json({ message: 'No transactions found' });
+	}
+
+	return res.status(200).json(transactions);
+});
+
+export const getTransactionById = asyncWrapper(async (req, res, next) => {
+	const { id } = req.params as { id: string };
+
+	const transaction = await Transaction.findById(id);
+
+	if (!transaction) {
+		return next(createCustomError('Transaction not found', 404));
+	}
+
+	return res.status(200).json(transaction);
+});
+
+export const verifyDeliveryUser = asyncWrapper(async (req, res, next) => {
+	const { id } = req.params as { id: string };
+
+	const { status } = <{ status: boolean }>req.body;
+
+	const deliveryUser = await DeliveryUser.findById(id);
+
+	if (!deliveryUser) {
+		return next(createCustomError('Delivery user not found', 404));
+	}
+
+	deliveryUser.verified = status;
+	await deliveryUser.save();
+
+	return res.status(200).json(deliveryUser);
+});
+
+export const getDeliveryUsers = asyncWrapper(async (_, res) => {
+	const deliveryUsers = await DeliveryUser.find();
+
+	if (!deliveryUsers.length) {
+		return res.json({ message: 'No delivery users found' });
+	}
+
+	return res.status(200).json(deliveryUsers);
+});
+
+export const getDeliveryUserById = asyncWrapper(async (req, res, next) => {
+	const deliveryUser = await DeliveryUser.findById(req.params.id);
+
+	if (!deliveryUser) {
+		return next(createCustomError('Delivery user not found', 404));
+	}
+
+	return res.status(200).json(deliveryUser);
+});

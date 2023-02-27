@@ -1,5 +1,5 @@
 import { IsEmail, Length } from 'class-validator';
-import { OrderStatus } from '../models';
+import { OrderStatus, PaymentMethod } from '../models';
 
 export class CreateCustomerInput {
 	@IsEmail()
@@ -43,13 +43,25 @@ export interface CustomerPayload {
 	verified: boolean;
 }
 
-export interface OrderInput {
+export interface CartItem {
 	_id: string;
 	quantity: number;
+}
+
+export interface OrderInput {
+	txnId: string;
+	amount: number;
+	items: CartItem[];
 }
 
 export interface ProcessOrder {
 	orderStatus: OrderStatus;
 	remarks: string;
 	time?: number;
+}
+
+export interface createPaymentInput {
+	amount: number;
+	paymentMethod: PaymentMethod;
+	offerId?: string;
 }

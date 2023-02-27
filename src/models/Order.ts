@@ -1,11 +1,6 @@
 import { Document, model, Schema } from 'mongoose';
 import { FoodDoc } from './Food';
 
-export enum PaymentMethod {
-	COD = 'COD',
-	CARD = 'CARD'
-}
-
 export enum OrderStatus {
 	WAITING = 'WAITING',
 	FAILED = 'FAILED',
@@ -27,13 +22,10 @@ export interface OrderDoc extends Document {
 	vendorId: string;
 	items: CartItem[];
 	totalAmount: number;
-	paidThrough: PaymentMethod;
-	paymentResponse: string;
+	paidAmount: number;
 	orderStatus: OrderStatus;
 	remarks: string;
 	deliveryId: string;
-	offerId: string;
-	appliedOffer: boolean;
 	readyTime: number;
 	orderDate: Date;
 	createdAt: Date;
@@ -72,12 +64,9 @@ const OrderSchema = new Schema<OrderDoc>(
 			type: Number,
 			required: true
 		},
-		paidThrough: {
-			type: String,
-			enum: Object.values(PaymentMethod)
-		},
-		paymentResponse: {
-			type: String
+		paidAmount: {
+			type: Number,
+			required: true
 		},
 		orderStatus: {
 			type: String,
@@ -92,12 +81,6 @@ const OrderSchema = new Schema<OrderDoc>(
 		},
 		deliveryId: {
 			type: String
-		},
-		offerId: {
-			type: String
-		},
-		appliedOffer: {
-			type: Boolean
 		},
 		readyTime: {
 			type: Number,

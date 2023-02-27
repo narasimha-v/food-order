@@ -1,12 +1,16 @@
-import { NextFunction, Request } from 'express';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
+import { NextFunction, Request } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import {
+	CartItem as CartItemInput,
 	CreateCustomerInput,
+	createPaymentInput,
 	CustomerLoginInput,
 	EditCustomerProfileInput,
 	FindCustomerOptions,
-	OrderInput
+	OrderInput,
+	PromoType
 } from '../dto';
 import {
 	asyncWrapper,
@@ -17,18 +21,22 @@ import {
 	CartItem,
 	Customer,
 	CustomerDoc,
+	DeliveryUser,
 	Food,
+	Offer,
 	Order,
-	PaymentMethod
+	PaymentStatus,
+	Transaction,
+	TransactionDoc,
+	Vendor
 } from '../models';
 import {
-	generateSalt,
-	generatePassword,
 	generateOtp,
+	generatePassword,
+	generateSalt,
 	onRequestOtp,
 	validatePassword
 } from '../utils';
-import { v4 as uuidv4 } from 'uuid';
 
 /* ------------------------ Account service functions ------------------------  */
 
@@ -213,22 +221,25 @@ export const editCustomerProfile = asyncWrapper(
 /* ------------------------ Order service functions ------------------------  */
 
 export const createOrder = asyncWrapper(
-	async (req: Request<any, any, OrderInput[]>, res, next) => {
+	async (req: Request<any, any, OrderInput>, res, next) => {
+		const { items, txnId, amount } = req.body;
+
 		const customer = (await validateAndReturnCustomer(
 			req,
 			next
 		)) as CustomerDoc;
 
-		const cart = req.body;
+		// Validate transaction
+		const txn = (await validateTransaction(txnId, next)) as TransactionDoc;
 
 		let cartItems: CartItem[] = Array();
 		let netAmount = 0.0;
 
 		const foods = await Food.find({
-			_id: { $in: cart.map((item) => item._id) }
+			_id: { $in: items.map((item) => item._id) }
 		});
 
-		for (const item of cart) {
+		for (const item of items) {
 			const food = foods.find((food) => food._id == item._id);
 
 			if (!food) {
@@ -253,7 +264,7 @@ export const createOrder = asyncWrapper(
 			vendorId: foods[0].vendorId,
 			items: cartItems,
 			totalAmount: netAmount,
-			paidThrough: PaymentMethod.COD,
+			paidAmount: amount,
 			orderDate: new Date()
 		});
 
@@ -263,7 +274,16 @@ export const createOrder = asyncWrapper(
 
 		customer.cart = [];
 		customer.orders.push(order);
-		await customer.save();
+
+		txn.orderId = order._id;
+		txn.vendorId = order.vendorId;
+		txn.status = PaymentStatus.SUCCESS;
+
+		await Promise.all([
+			customer.save(),
+			txn.save(),
+			assignOrderForDelivery(order._id, order.vendorId, next)
+		]);
 		return res.status(201).json(order);
 	}
 );
@@ -287,7 +307,7 @@ export const getOrderById = asyncWrapper(async (req, res, next) => {
 /* ------------------------ Cart service functions ------------------------  */
 
 export const addToCart = asyncWrapper(
-	async (req: Request<any, any, OrderInput>, res, next) => {
+	async (req: Request<any, any, CartItemInput>, res, next) => {
 		const customer = (await validateAndReturnCustomer(
 			req,
 			next
@@ -357,7 +377,125 @@ export const getCart = asyncWrapper(async (req, res, next) => {
 	return res.status(200).json(customer.cart);
 });
 
+/* ------------------------ Offer service functions ------------------------  */
+
+export const verifyOffer = asyncWrapper(async (req, res, next) => {
+	const offerId = req.params.id;
+
+	(await validateAndReturnCustomer(req, next)) as CustomerDoc;
+
+	const appliedOffer = await Offer.findById(offerId);
+
+	if (!appliedOffer) {
+		return next(createCustomError('Offer not found', 404));
+	}
+
+	if (appliedOffer.promoType === PromoType.USER) {
+		// apply only if user is eligible
+	} else {
+		if (!appliedOffer.isActive) {
+			return next(createCustomError('Offer is not active', 400));
+		}
+		return res
+			.status(200)
+			.json({ message: 'Offer is valid', offer: appliedOffer });
+	}
+});
+
+/* ------------------------ Payment service functions ------------------------  */
+
+export const createPayment = asyncWrapper(
+	async (req: Request<any, any, createPaymentInput>, res, next) => {
+		const customer = (await validateAndReturnCustomer(
+			req,
+			next
+		)) as CustomerDoc;
+
+		const { amount, paymentMethod, offerId } = req.body;
+
+		let payableAmount = amount;
+
+		if (offerId) {
+			const appliedOffer = await Offer.findById(offerId);
+			if (!appliedOffer) {
+				return next(createCustomError('Offer not found', 404));
+			}
+			if (!appliedOffer.isActive) {
+				return next(createCustomError('Offer is not active', 400));
+			}
+			payableAmount = amount - appliedOffer.offerAmount;
+		}
+
+		// Perform payment gateway api call
+
+		// Create record of transaction
+		const transaction = await Transaction.create({
+			customer: customer._id,
+			orderValue: payableAmount,
+			offerUsed: offerId,
+			status: PaymentStatus.OPEN,
+			paymentMode: paymentMethod,
+			paymentResponse: ''
+		});
+
+		// Return transaction
+		return res.status(201).json(transaction);
+	}
+);
+
+/* ------------------------ Delivery service functions ------------------------  */
+const assignOrderForDelivery = async (
+	orderId: string,
+	vendorId: string,
+	next: NextFunction
+) => {
+	const vendor = await Vendor.findById(vendorId);
+
+	if (!vendor) {
+		return next(createCustomError('Vendor not found', 404));
+	}
+
+	const areaCode = vendor.pincode;
+	const vendorLat = vendor.lat;
+	const vendorLng = vendor.lng;
+
+	const deliveryUsers = await DeliveryUser.find({
+		pincode: areaCode,
+		verified: true,
+		isAvailable: true
+	});
+
+	if (!deliveryUsers.length) {
+		return next(createCustomError('No delivery user currently available', 404));
+	}
+
+	const curOrder = await Order.findById(orderId);
+
+	if (!curOrder) {
+		return next(createCustomError('Order not found', 404));
+	}
+
+	// Check nearest delivery user and assign order
+
+	curOrder.deliveryId = deliveryUsers[0]._id;
+	await curOrder.save();
+};
+
 /* ------------------------ Helpers ------------------------  */
+
+export const findCustomer = async ({
+	id,
+	email,
+	phone
+}: FindCustomerOptions) => {
+	if (id) {
+		return await Customer.findById(id).populate(['orders', 'cart.food']);
+	}
+
+	return await Customer.findOne({
+		$or: [{ email }, { phone }]
+	});
+};
 
 const validateAndReturnCustomer = async (req: Request, next: NextFunction) => {
 	const user = req.user;
@@ -373,16 +511,16 @@ const validateAndReturnCustomer = async (req: Request, next: NextFunction) => {
 	return customer;
 };
 
-export const findCustomer = async ({
-	id,
-	email,
-	phone
-}: FindCustomerOptions) => {
-	if (id) {
-		return await Customer.findById(id).populate(['orders', 'cart.food']);
+const validateTransaction = async (txnId: string, next: NextFunction) => {
+	const currentTransaction = await Transaction.findById(txnId);
+
+	if (!currentTransaction) {
+		return next(createCustomError('Transaction not found', 404));
 	}
 
-	return await Customer.findOne({
-		$or: [{ email }, { phone }]
-	});
+	if (currentTransaction.status !== PaymentStatus.OPEN) {
+		return next(createCustomError('Transaction already completed', 400));
+	}
+
+	return currentTransaction;
 };

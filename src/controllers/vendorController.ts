@@ -73,9 +73,16 @@ export const updateVendorProfile = asyncWrapper(
 );
 
 export const updateVendorService = asyncWrapper(async (req, res, next) => {
+	const { lat, lng } = req.body as { lat?: number; lng?: number };
+
 	const vendor = (await validateAndReturnVendor(req, next)) as VendorDoc;
 
 	vendor.serviceAvailable = !vendor.serviceAvailable;
+
+	if (lat && lng) {
+		vendor.lat = lat;
+		vendor.lng = lng;
+	}
 
 	await vendor.save();
 

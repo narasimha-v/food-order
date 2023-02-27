@@ -3,6 +3,7 @@ import { errorHandler, notFound } from '../middleware';
 import { getIPAddress } from '../utils';
 import { adminRoute } from './adminRoute';
 import { customerRoute } from './customerRoute';
+import { deliveryRoute } from './deliveryRoute';
 import { shoppingRoute } from './shoppingRoute';
 import { vendorRoute } from './vendorRoute';
 
@@ -16,6 +17,7 @@ router.get('/', (req: Request, res: Response) => {
 router.use('/admin', adminRoute);
 router.use('/vendor', vendorRoute);
 router.use('/customer', customerRoute);
+router.use('/delivery', deliveryRoute);
 router.use(shoppingRoute);
 router.use(errorHandler);
 router.use(notFound);
